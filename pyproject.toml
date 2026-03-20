@@ -1,0 +1,32 @@
+[project]
+name = "pdfchunk"
+version = "0.1.0"
+description = "A Python CLI that splits PDFs into fixed-page-count Markdown chunks for LLM context feeding."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "click>=8.1",
+    "pymupdf4llm>=0.0.17",
+    "python-frontmatter>=1.1",
+]
+
+[project.optional-dependencies]
+ai = [
+    "litellm>=1.0",
+]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.5.1",
+    "pytest>=8.0",
+]
+
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.scripts]
+pdfchunk = "pdfchunk.cli:main"
