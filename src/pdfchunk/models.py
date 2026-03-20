@@ -11,6 +11,8 @@ class ChunkFileFormat:
     page_end: int
 
     def __post_init__(self) -> None:
+        if self.chunk < 1:
+            raise ValueError(f"chunk は1以上: {self.chunk}")
         if self.page_start < 1:
             raise ValueError(f"page_start は1以上: {self.page_start}")
         if self.page_end < 1:
