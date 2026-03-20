@@ -32,17 +32,19 @@ YAML frontmatter + パーサ生出力のMarkdown本文。
 ---
 source: "example.pdf"
 chunk: 3
-pages: [21, 30]
+page_start: 21
+page_end: 30
 ---
 （Markdown本文）
 ```
 
 - `source` — 元PDFファイル名（パスではない）
 - `chunk` — 1-indexed チャンク番号
-- `pages` — [start, end] inclusive（1-indexed）
+- `page_start` — 開始ページ（1-indexed, inclusive）
+- `page_end` — 終了ページ（1-indexed, inclusive）
 - バージョンフィールドは設けない
 
-この構造を `ChunkFileFormat` として `dataclass` または `TypedDict` で型定義する。frontmatterの読み書きには適切なライブラリ（例: `python-frontmatter`）を使用してよい。
+この構造を `ChunkFileFormat` として `dataclass` で型定義する。`page_start <= page_end` および `>= 1` のバリデーションを `__post_init__` で行う。frontmatterの読み書きには適切なライブラリ（例: `python-frontmatter`）を使用してよい。
 
 ### 出力ディレクトリ構造
 
@@ -100,7 +102,7 @@ class IndexGenerator(ABC):
         ...
 ```
 
-- frontmatterからメタ情報（source, chunk, pages）を構造的に取得する
+- frontmatterからメタ情報（source, chunk, page_start, page_end）を構造的に取得する
 - content部分（frontmatter以降）からexcerpt_lines行を機械的に抽出する
 - 出力フォーマットはリスト形式（テーブルではない）
 - `summarize_chunks=True` 時はコンストラクタで注入された Summarizer を使用する
