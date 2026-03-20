@@ -32,8 +32,9 @@ def tmp_chunk_files(tmp_path: Path) -> list[Path]:
     ]
     files: list[Path] = []
     for c in chunks:
+        lines = "\n".join(f"チャンク{c.chunk}の行{i}" for i in range(3, 8))
         post = frontmatter.Post(
-            content=f"# チャンク{c.chunk}の本文\n\nこれはテスト用の本文です。\n行3\n行4\n行5\n行6\n",
+            content=f"# チャンク{c.chunk}の本文\n\nこれはチャンク{c.chunk}のテスト用本文です。\n{lines}\n",
             **{
                 "source": c.source,
                 "chunk": c.chunk,

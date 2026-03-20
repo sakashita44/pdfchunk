@@ -44,3 +44,9 @@ class TestChunkFileFormat:
     def test_start_greater_than_end_raises(self) -> None:
         with pytest.raises(ValueError, match="page_start <= page_end"):
             ChunkFileFormat(source="a.pdf", chunk=1, page_start=10, page_end=5)
+
+    def test_empty_source_is_allowed(self) -> None:
+        """sourceの内容バリデーション（空文字・拡張子等）はモデルの責務外。
+        ファイル名の妥当性はCLI層（入力境界）で担保する。"""
+        chunk = ChunkFileFormat(source="", chunk=1, page_start=1, page_end=1)
+        assert chunk.source == ""
