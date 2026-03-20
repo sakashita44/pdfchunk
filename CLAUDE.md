@@ -82,6 +82,11 @@ class Parser(ABC):
 
 初期実装: `Pymupdf4llmParser`（pymupdf4llmを使用）
 
+#### エラー契約
+
+- 存在しないパスが渡された場合、実装固有の例外をそのまま伝搬させず独自例外でラップする（IF が差し替え可能なため）
+- `start_page` または `end_page` が実際のページ数を超えている場合はエラー。呼び出し側（CLI）が正しい範囲を計算して渡す責務を持つ
+
 ### IndexGenerator
 
 ```python
@@ -105,7 +110,9 @@ class IndexGenerator(ABC):
 - frontmatterからメタ情報（source, chunk, page_start, page_end）を構造的に取得する
 - content部分（frontmatter以降）からexcerpt_lines行を機械的に抽出する
 - 出力フォーマットはリスト形式（テーブルではない）
+- チャンクファイルはファイル名の昇順でソートして処理する
 - `summarize_chunks=True` 時はコンストラクタで注入された Summarizer を使用する
+- `summarize_chunks=True` かつ Summarizer が未注入の場合、IndexGenerator が例外を送出する。CLI 層はその例外をキャッチし「Summarizerが設定されていません。`--summarize-chunks` を外してください」旨のメッセージを表示
 - md生成ライブラリへの依存は許容
 
 ### Summarizer
@@ -152,9 +159,16 @@ pdfchunk index <output_dir> [options]
 
 1. `Parser.get_total_pages()` で総ページ数を取得
 1. `chunk_size` でページ範囲リストを生成（CLIの単純ロジック）
+    - 最終チャンクの `end_page` は `min(start + chunk_size - 1, total_pages)` で端数に対応
+    - 総チャンク数が 9999 を超える場合はエラー（4桁ゼロパディングの制約）
 1. 各範囲に対して `Parser.parse()` を呼び出し
 1. 返却されたMarkdownにYAML frontmatterを付与
 1. `NNNN.md` として書き出し
+
+`--overwrite` の挙動（split）:
+
+- `--overwrite` なし: `output_dir` 内に `*.md` が1つでも存在すればエラー
+- `--overwrite` あり: `output_dir` 内の `*.md` を全削除してから再生成（チャンク数が減った場合に古いファイルが残る問題を防ぐ）
 
 `index` コマンドの処理フロー:
 
@@ -162,13 +176,18 @@ pdfchunk index <output_dir> [options]
 1. `IndexGenerator.generate()` に渡す
 1. 結果を `index.md` として書き出し
 
+`--overwrite` の挙動（index）:
+
+- `--overwrite` なし: `index.md` が既に存在すればエラー
+- `--overwrite` あり: `index.md` を上書き
+
 ## 制約
 
 - チャンク境界は純粋にページ数ベース。意味的な分割は行わない
 - 文途中でチャンクが切れることを許容する
 - AI要約はindex生成時のスイッチ方式。既存indexへの後追い追記ではない
 - 人間によるメモの追加に構造的制約を課さない（CLI出力のみが構造規定対象）
-- 再生成は `--overwrite` フラグによる全上書き。差分更新は行わない
+- 再生成は `--overwrite` フラグによる削除+再生成。差分更新は行わない
 - MCP対応は後日。現時点ではCLIのみ
 
 ## 依存ライブラリ

@@ -29,6 +29,7 @@ class TestCLIHelp:
         assert result.exit_code == 0
         assert "--excerpt-lines" in result.output
         assert "--summarize-chunks" in result.output
+        assert "--overwrite" in result.output
 
 
 @pytest.mark.skip(reason="splitコマンド実装待ち (#5)")
@@ -45,7 +46,27 @@ class TestSplitCommand:
     def test_split_without_overwrite_fails_on_existing(
         self, runner: CliRunner, tmp_path: str
     ) -> None:
-        """--overwriteなしで既存ディレクトリにファイルがある場合エラーになること。"""
+        """--overwriteなしでoutput_dir内にmdが存在する場合エラーになること。"""
+
+    def test_split_overwrite_removes_old_files(
+        self, runner: CliRunner, sample_pdf_path: str, tmp_path: str
+    ) -> None:
+        """--overwriteありで古いmdファイルが残らないこと。"""
+
+    def test_split_single_page_pdf(
+        self, runner: CliRunner, sample_pdf_path: str, tmp_path: str
+    ) -> None:
+        """1ページのPDFでチャンクが1つ生成されること。"""
+
+    def test_split_fractional_last_chunk(
+        self, runner: CliRunner, sample_pdf_path: str, tmp_path: str
+    ) -> None:
+        """端数ページの最終チャンクが正しい範囲になること（例: 55ページ, chunk_size=10 → 最終は51-55）。"""
+
+    def test_split_exceeds_max_chunks_raises(
+        self, runner: CliRunner, tmp_path: str
+    ) -> None:
+        """総チャンク数が9999を超える場合エラーになること。"""
 
 
 @pytest.mark.skip(reason="indexコマンド実装待ち (#6)")
@@ -57,3 +78,13 @@ class TestIndexCommand:
 
     def test_index_with_summarize(self, runner: CliRunner, tmp_path: str) -> None:
         """--summarize-chunksオプションが動作すること。"""
+
+    def test_index_without_overwrite_fails_on_existing(
+        self, runner: CliRunner, tmp_path: str
+    ) -> None:
+        """--overwriteなしでindex.mdが既存の場合エラーになること。"""
+
+    def test_index_summarize_without_summarizer_raises(
+        self, runner: CliRunner, tmp_path: str
+    ) -> None:
+        """Summarizer未設定で--summarize-chunks指定時にエラーメッセージが表示されること。"""

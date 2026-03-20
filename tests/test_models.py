@@ -29,6 +29,18 @@ class TestChunkFileFormat:
         with pytest.raises(ValueError, match="page_end は1以上"):
             ChunkFileFormat(source="a.pdf", chunk=1, page_start=1, page_end=0)
 
+    def test_negative_chunk_raises(self) -> None:
+        with pytest.raises(ValueError, match="chunk は1以上"):
+            ChunkFileFormat(source="a.pdf", chunk=-1, page_start=1, page_end=10)
+
+    def test_negative_page_start_raises(self) -> None:
+        with pytest.raises(ValueError, match="page_start は1以上"):
+            ChunkFileFormat(source="a.pdf", chunk=1, page_start=-5, page_end=10)
+
+    def test_negative_page_end_raises(self) -> None:
+        with pytest.raises(ValueError, match="page_end は1以上"):
+            ChunkFileFormat(source="a.pdf", chunk=1, page_start=1, page_end=-3)
+
     def test_start_greater_than_end_raises(self) -> None:
         with pytest.raises(ValueError, match="page_start <= page_end"):
             ChunkFileFormat(source="a.pdf", chunk=1, page_start=10, page_end=5)

@@ -36,3 +36,17 @@ class TestIndexGeneratorWithSummarizer:
         #     summarize_chunks=True,
         # )
         # assert isinstance(result, str)
+
+    def test_summarizer_not_called_when_flag_off(
+        self, tmp_chunk_files: list[Path]
+    ) -> None:
+        """summarize_chunks=FalseならSummarizerがDIされていても呼ばれないこと。"""
+        # summarizer = DummySummarizer()
+        # generator = DefaultIndexGenerator(summarizer=summarizer)
+        # result = generator.generate(
+        #     chunk_files=tmp_chunk_files,
+        #     excerpt_lines=5,
+        #     summarize_chunks=False,
+        # )
+        # 要約文字列が結果に含まれない
+        # assert summarizer.summarize("dummy") not in result
