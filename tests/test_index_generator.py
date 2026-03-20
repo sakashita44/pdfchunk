@@ -17,6 +17,7 @@ class TestIndexGenerator:
         # )
         # assert isinstance(result, str)
         # assert "0001.md" in result
+        pytest.fail("未実装")
 
     def test_generate_contains_metadata(self, tmp_chunk_files: list[Path]) -> None:
         """生成されたindexにチャンクのメタ情報が含まれること。"""
@@ -28,6 +29,7 @@ class TestIndexGenerator:
         # )
         # assert "test.pdf" in result
         # assert "page_start" in result or "1" in result
+        pytest.fail("未実装")
 
     def test_generate_with_excerpt(self, tmp_chunk_files: list[Path]) -> None:
         """抜粋行が含まれること。"""
@@ -38,6 +40,7 @@ class TestIndexGenerator:
         #     summarize_chunks=False,
         # )
         # assert "チャンク" in result
+        pytest.fail("未実装")
 
     def test_generate_respects_excerpt_lines_zero(
         self, tmp_chunk_files: list[Path]
@@ -50,6 +53,7 @@ class TestIndexGenerator:
         #     summarize_chunks=False,
         # )
         # assert isinstance(result, str)
+        pytest.fail("未実装")
 
     def test_generate_sorts_by_filename(self, tmp_chunk_files: list[Path]) -> None:
         """ファイルを逆順で渡してもファイル名昇順でソートされること。"""
@@ -64,6 +68,7 @@ class TestIndexGenerator:
         # idx1 = result.index("0001.md")
         # idx3 = result.index("0003.md")
         # assert idx1 < idx3
+        pytest.fail("未実装")
 
     def test_generate_empty_list(self) -> None:
         """空のチャンクファイルリストでも正常に動作すること。"""
@@ -74,6 +79,7 @@ class TestIndexGenerator:
         #     summarize_chunks=False,
         # )
         # assert isinstance(result, str)
+        pytest.fail("未実装")
 
     def test_generate_summarize_without_summarizer_raises(
         self, tmp_chunk_files: list[Path]
@@ -86,3 +92,4 @@ class TestIndexGenerator:
         #         excerpt_lines=5,
         #         summarize_chunks=True,
         #     )
+        pytest.fail("未実装")

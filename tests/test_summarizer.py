@@ -13,6 +13,7 @@ class TestDummySummarizer:
         # result = summarizer.summarize("任意のテキスト")
         # assert isinstance(result, str)
         # assert len(result) > 0
+        pytest.fail("未実装")
 
     def test_returns_same_for_different_inputs(self) -> None:
         """異なる入力に対して同じ固定文字列が返ること。"""
@@ -20,6 +21,7 @@ class TestDummySummarizer:
         # result1 = summarizer.summarize("テキスト1")
         # result2 = summarizer.summarize("テキスト2")
         # assert result1 == result2
+        pytest.fail("未実装")
 
 
 @pytest.mark.skip(reason="Summarizer + IndexGenerator実装待ち (#4, #7)")
@@ -36,6 +38,7 @@ class TestIndexGeneratorWithSummarizer:
         #     summarize_chunks=True,
         # )
         # assert isinstance(result, str)
+        pytest.fail("未実装")
 
     def test_summarizer_not_called_when_flag_off(
         self, tmp_chunk_files: list[Path]
@@ -50,3 +53,4 @@ class TestIndexGeneratorWithSummarizer:
         # )
         # 要約文字列が結果に含まれない
         # assert summarizer.summarize("dummy") not in result
+        pytest.fail("未実装")
