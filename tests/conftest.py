@@ -9,17 +9,28 @@ from pdfchunk.models import ChunkFileFormat
 PDF_FIXTURES_DIR = Path(__file__).parent / "fixtures" / "pdfs"
 
 
-@pytest.fixture()
-def sample_pdf_path() -> Path:
+def _discover_pdfs() -> list[Path]:
+    """fixtures/pdfs/ 内の全PDFファイルを検出する。"""
+    if not PDF_FIXTURES_DIR.exists():
+        return []
+    return sorted(PDF_FIXTURES_DIR.glob("*.pdf"))
+
+
+_pdf_files = _discover_pdfs()
+
+
+@pytest.fixture(
+    params=_pdf_files if _pdf_files else [None], ids=lambda p: p.name if p else "no-pdf"
+)
+def sample_pdf_path(request: pytest.FixtureRequest) -> Path:
     """テスト用PDFのパスを返す。
 
-    tests/fixtures/pdfs/ にPDFを配置して使用する。
+    tests/fixtures/pdfs/ 内の全PDFに対してパラメタライズされる。
     ファイルが存在しない場合はテストをスキップする。
     """
-    pdf_path = PDF_FIXTURES_DIR / "sample.pdf"
-    if not pdf_path.exists():
-        pytest.skip(f"テスト用PDFが未配置: {pdf_path}")
-    return pdf_path
+    if request.param is None:
+        pytest.skip(f"テスト用PDFが未配置: {PDF_FIXTURES_DIR}")
+    return request.param
 
 
 @pytest.fixture()
