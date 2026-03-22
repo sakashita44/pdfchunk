@@ -108,7 +108,7 @@ class IndexGenerator(ABC):
 ```
 
 - frontmatterからメタ情報（source, chunk, page_start, page_end）を構造的に取得する
-- content部分（frontmatter以降）からexcerpt_lines行を機械的に抽出する
+- content部分（frontmatter以降）から空行・空白のみの行を除外したうえでexcerpt_lines行を抽出する
 - 出力フォーマットはリスト形式（テーブルではない）
 - チャンクファイルはファイル名の昇順でソートして処理する
 - `summarize_chunks=True` 時はコンストラクタで注入された Summarizer を使用する

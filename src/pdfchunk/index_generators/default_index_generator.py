@@ -43,10 +43,12 @@ class DefaultIndexGenerator(IndexGenerator):
             entry_lines.append(f"  - chunk: {chunk_num}")
             entry_lines.append(f"  - pages: {page_start}-{page_end}")
 
-            # 抜粋
+            # 抜粋（空行・空白のみの行を除外して情報密度を高める）
             if excerpt_lines > 0:
                 content_lines = post.content.splitlines()
-                excerpt = content_lines[:excerpt_lines]
+                excerpt = [line for line in content_lines if line.strip()][
+                    :excerpt_lines
+                ]
                 if excerpt:
                     entry_lines.append("  - excerpt:")
                     for line in excerpt:

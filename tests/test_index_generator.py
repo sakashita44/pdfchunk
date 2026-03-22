@@ -99,6 +99,31 @@ class TestIndexGenerator:
                 summarize_chunks=True,
             )
 
+    def test_generate_excerpt_skips_blank_lines(
+        self, tmp_chunk_files: list[Path]
+    ) -> None:
+        """抜粋から空行・空白のみの行が除外されること。"""
+        generator = DefaultIndexGenerator()
+        result = generator.generate(
+            chunk_files=tmp_chunk_files,
+            excerpt_lines=5,
+            summarize_chunks=False,
+        )
+        # excerpt内の各行が空でないこと
+        in_excerpt = False
+        for line in result.splitlines():
+            if "excerpt:" in line:
+                in_excerpt = True
+                continue
+            if in_excerpt:
+                if line.startswith("    - "):
+                    excerpt_content = line[len("    - ") :]
+                    assert excerpt_content.strip(), (
+                        f"空行が抜粋に含まれている: {line!r}"
+                    )
+                else:
+                    in_excerpt = False
+
     def test_generate_with_summarizer(self, tmp_chunk_files: list[Path]) -> None:
         """Summarizer注入時にsummarize_chunks=Trueで要約が含まれること。"""
         generator = DefaultIndexGenerator(summarizer=DummySummarizer())
