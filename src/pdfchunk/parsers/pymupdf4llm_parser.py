@@ -30,6 +30,8 @@ class Pymupdf4llmParser(Parser):
 
     def get_total_pages(self, pdf_path: Path) -> int:
         """PDFの総ページ数を返す。"""
+        if not pdf_path.exists():
+            raise PdfChunkError(f"PDFファイルが見つかりません: {pdf_path}")
         try:
             doc = pymupdf.open(str(pdf_path))
         except Exception as e:
