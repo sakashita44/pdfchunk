@@ -17,11 +17,13 @@ class TestPymupdf4llmParser:
         assert total > 0
 
     def test_parse_returns_markdown(self, sample_pdf_path: Path) -> None:
-        """指定範囲のパース結果が空でないMarkdown文字列であること。"""
+        """指定範囲のパース結果がMarkdown記法を含む文字列であること。"""
         parser = Pymupdf4llmParser()
         result = parser.parse(sample_pdf_path, start_page=1, end_page=1)
         assert isinstance(result, str)
         assert len(result) > 0
+        # pymupdf4llm がMarkdown記法要素を含む出力を返すことを確認
+        assert "#" in result or "**" in result or "- " in result or "\n\n" in result
 
     def test_parse_single_page(self, sample_pdf_path: Path) -> None:
         """1ページだけのパースが正常に動作すること。"""
