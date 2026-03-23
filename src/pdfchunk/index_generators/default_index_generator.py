@@ -31,7 +31,12 @@ class DefaultIndexGenerator(IndexGenerator):
         entries: list[str] = []
 
         for file_path in sorted_files:
-            post = frontmatter.load(str(file_path), encoding="utf-8")
+            try:
+                post = frontmatter.load(file_path, encoding="utf-8")
+            except Exception as e:
+                raise PdfChunkError(
+                    f"チャンクファイルの読み込みに失敗しました: {file_path}"
+                ) from e
             meta_source = post.get("source", "")
             if not source:
                 source = meta_source
@@ -72,6 +77,5 @@ class DefaultIndexGenerator(IndexGenerator):
         parts.append("")
         if entries:
             parts.append("\n".join(entries))
-        parts.append("")
 
         return "\n".join(parts)
