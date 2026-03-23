@@ -134,3 +134,26 @@ class TestIndexGenerator:
         )
         assert "ダミー要約" in result
         assert "summary:" in result
+
+    def test_generate_raises_on_invalid_file(self, tmp_path: Path) -> None:
+        """存在しないチャンクファイルでPdfChunkErrorが発生すること。"""
+        generator = DefaultIndexGenerator()
+        non_existent = tmp_path / "9999.md"
+        with pytest.raises(
+            PdfChunkError, match="チャンクファイルの読み込みに失敗しました"
+        ):
+            generator.generate(
+                chunk_files=[non_existent],
+                excerpt_lines=5,
+                summarize_chunks=False,
+            )
+
+    def test_generate_no_trailing_newline(self, tmp_chunk_files: list[Path]) -> None:
+        """generate()の返り値が末尾空行で終わらないこと。"""
+        generator = DefaultIndexGenerator()
+        result = generator.generate(
+            chunk_files=tmp_chunk_files,
+            excerpt_lines=5,
+            summarize_chunks=False,
+        )
+        assert not result.endswith("\n")
