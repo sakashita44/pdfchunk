@@ -1,5 +1,7 @@
 from pathlib import Path
+from unittest.mock import patch
 
+import frontmatter
 import pytest
 from click.testing import CliRunner
 
@@ -34,47 +36,175 @@ class TestCLIHelp:
         assert "--overwrite" in result.output
 
 
-@pytest.mark.skip(reason="splitコマンド実装待ち (#5)")
+def _mock_get_total_pages(_self: object, _pdf_path: Path) -> int:
+    """テスト用: 総ページ数25を返す。"""
+    return 25
+
+
+def _mock_parse(_self: object, _pdf_path: Path, start_page: int, end_page: int) -> str:
+    """テスト用: ページ範囲を示すMarkdownを返す。"""
+    return f"# Pages {start_page}-{end_page}\n\nContent for pages {start_page} to {end_page}.\n"
+
+
 class TestSplitCommand:
     """split コマンドの統合テスト。"""
 
-    def test_split_creates_chunk_files(
-        self, runner: CliRunner, sample_pdf_path: Path, tmp_path: Path
-    ) -> None:
+    @patch(
+        "pdfchunk.parsers.pymupdf4llm_parser.Pymupdf4llmParser.get_total_pages",
+        _mock_get_total_pages,
+    )
+    @patch(
+        "pdfchunk.parsers.pymupdf4llm_parser.Pymupdf4llmParser.parse",
+        _mock_parse,
+    )
+    def test_split_creates_chunk_files(self, runner: CliRunner, tmp_path: Path) -> None:
         """チャンクファイルが生成されること。"""
-        # result = runner.invoke(main, ["split", str(sample_pdf_path), str(tmp_path)])
-        # assert result.exit_code == 0
-        pytest.fail("未実装")
+        # click.Path(exists=True) のために仮ファイルを作成
+        dummy_pdf = tmp_path / "input" / "test.pdf"
+        dummy_pdf.parent.mkdir()
+        dummy_pdf.touch()
+        out_dir = tmp_path / "output"
+
+        result = runner.invoke(
+            main, ["split", str(dummy_pdf), str(out_dir), "--chunk-size", "10"]
+        )
+        assert result.exit_code == 0, result.output
+
+        md_files = sorted(out_dir.glob("*.md"))
+        assert len(md_files) == 3
+        assert [f.name for f in md_files] == ["0001.md", "0002.md", "0003.md"]
+
+        # frontmatter の検証
+        post = frontmatter.load(md_files[0], encoding="utf-8")
+        assert post["source"] == "test.pdf"
+        assert post["chunk"] == 1
+        assert post["page_start"] == 1
+        assert post["page_end"] == 10
+
+        post_last = frontmatter.load(md_files[2], encoding="utf-8")
+        assert post_last["page_start"] == 21
+        assert post_last["page_end"] == 25
 
     def test_split_without_overwrite_fails_on_existing(
         self, runner: CliRunner, tmp_path: Path
     ) -> None:
         """--overwriteなしでoutput_dir内にmdが存在する場合エラーになること。"""
-        pytest.fail("未実装")
+        out_dir = tmp_path / "output"
+        out_dir.mkdir()
+        (out_dir / "0001.md").write_text("existing", encoding="utf-8")
 
+        dummy_pdf = tmp_path / "test.pdf"
+        dummy_pdf.touch()
+
+        result = runner.invoke(main, ["split", str(dummy_pdf), str(out_dir)])
+        assert result.exit_code != 0
+        assert "--overwrite" in result.output
+
+    @patch(
+        "pdfchunk.parsers.pymupdf4llm_parser.Pymupdf4llmParser.get_total_pages",
+        lambda _s, _p: 5,
+    )
+    @patch(
+        "pdfchunk.parsers.pymupdf4llm_parser.Pymupdf4llmParser.parse",
+        _mock_parse,
+    )
     def test_split_overwrite_removes_old_files(
-        self, runner: CliRunner, sample_pdf_path: Path, tmp_path: Path
+        self, runner: CliRunner, tmp_path: Path
     ) -> None:
         """--overwriteありで古いmdファイルが残らないこと。"""
-        pytest.fail("未実装")
+        dummy_pdf = tmp_path / "test.pdf"
+        dummy_pdf.touch()
+        out_dir = tmp_path / "output"
+        out_dir.mkdir()
+        # 以前の実行で3チャンク生成されていたと仮定
+        for i in range(1, 4):
+            (out_dir / f"{i:04d}.md").write_text("old", encoding="utf-8")
 
-    def test_split_single_page_pdf(
-        self, runner: CliRunner, sample_pdf_path: Path, tmp_path: Path
-    ) -> None:
+        # 5ページ, chunk_size=10 → 1チャンクのみ
+        result = runner.invoke(
+            main,
+            [
+                "split",
+                str(dummy_pdf),
+                str(out_dir),
+                "--chunk-size",
+                "10",
+                "--overwrite",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+
+        md_files = list(out_dir.glob("*.md"))
+        assert len(md_files) == 1
+        assert md_files[0].name == "0001.md"
+
+    @patch(
+        "pdfchunk.parsers.pymupdf4llm_parser.Pymupdf4llmParser.get_total_pages",
+        lambda _s, _p: 1,
+    )
+    @patch(
+        "pdfchunk.parsers.pymupdf4llm_parser.Pymupdf4llmParser.parse",
+        _mock_parse,
+    )
+    def test_split_single_page_pdf(self, runner: CliRunner, tmp_path: Path) -> None:
         """1ページのPDFでチャンクが1つ生成されること。"""
-        pytest.fail("未実装")
+        dummy_pdf = tmp_path / "single.pdf"
+        dummy_pdf.touch()
+        out_dir = tmp_path / "output"
 
+        result = runner.invoke(main, ["split", str(dummy_pdf), str(out_dir)])
+        assert result.exit_code == 0, result.output
+
+        md_files = list(out_dir.glob("*.md"))
+        assert len(md_files) == 1
+
+        post = frontmatter.load(md_files[0], encoding="utf-8")
+        assert post["page_start"] == 1
+        assert post["page_end"] == 1
+
+    @patch(
+        "pdfchunk.parsers.pymupdf4llm_parser.Pymupdf4llmParser.get_total_pages",
+        _mock_get_total_pages,
+    )
+    @patch(
+        "pdfchunk.parsers.pymupdf4llm_parser.Pymupdf4llmParser.parse",
+        _mock_parse,
+    )
     def test_split_fractional_last_chunk(
-        self, runner: CliRunner, sample_pdf_path: Path, tmp_path: Path
+        self, runner: CliRunner, tmp_path: Path
     ) -> None:
-        """端数ページの最終チャンクが正しい範囲になること（例: 55ページ, chunk_size=10 → 最終は51-55）。"""
-        pytest.fail("未実装")
+        """端数ページの最終チャンクが正しい範囲になること（25ページ, chunk_size=10 → 最終は21-25）。"""
+        dummy_pdf = tmp_path / "test.pdf"
+        dummy_pdf.touch()
+        out_dir = tmp_path / "output"
 
+        result = runner.invoke(
+            main, ["split", str(dummy_pdf), str(out_dir), "--chunk-size", "10"]
+        )
+        assert result.exit_code == 0, result.output
+
+        post = frontmatter.load(out_dir / "0003.md", encoding="utf-8")
+        assert post["page_start"] == 21
+        assert post["page_end"] == 25
+
+    @patch(
+        "pdfchunk.parsers.pymupdf4llm_parser.Pymupdf4llmParser.get_total_pages",
+        lambda _s, _p: 10000,
+    )
     def test_split_exceeds_max_chunks_raises(
         self, runner: CliRunner, tmp_path: Path
     ) -> None:
         """総チャンク数が9999を超える場合エラーになること。"""
-        pytest.fail("未実装")
+        dummy_pdf = tmp_path / "big.pdf"
+        dummy_pdf.touch()
+        out_dir = tmp_path / "output"
+
+        # 10000ページ, chunk_size=1 → 10000チャンク > 9999
+        result = runner.invoke(
+            main, ["split", str(dummy_pdf), str(out_dir), "--chunk-size", "1"]
+        )
+        assert result.exit_code != 0
+        assert "9999" in result.output
 
 
 @pytest.mark.skip(reason="indexコマンド実装待ち (#6)")
