@@ -1,4 +1,5 @@
 import math
+from dataclasses import asdict
 from pathlib import Path
 
 import click
@@ -6,42 +7,27 @@ import frontmatter
 
 from pdfchunk.exceptions import PdfChunkError
 from pdfchunk.models import ChunkFileFormat
+from pdfchunk.parser import Parser
 from pdfchunk.parsers.pymupdf4llm_parser import Pymupdf4llmParser
 
 MAX_CHUNKS = 9999
+CHUNK_FILE_PATTERN = "[0-9][0-9][0-9][0-9].md"
 
 
-@click.group()
-def main() -> None:
-    """PDFをページ単位でチャンク分割し、Markdown化・インデックス生成するCLIツール。"""
-
-
-@main.command()
-@click.argument("pdf_path", type=click.Path(exists=True))
-@click.argument("output_dir", type=click.Path())
-@click.option(
-    "--chunk-size",
-    default=10,
-    type=click.IntRange(min=1),
-    help="チャンクあたりのページ数。",
-)
-@click.option("--overwrite", is_flag=True, help="既存ファイルを上書きする。")
-def split(pdf_path: str, output_dir: str, chunk_size: int, overwrite: bool) -> None:
-    """PDFをページ単位でチャンク分割する。"""
-    pdf = Path(pdf_path)
-    out = Path(output_dir)
+def run_split(
+    pdf: Path, out: Path, chunk_size: int, overwrite: bool, parser: Parser
+) -> None:
+    """split コマンドのオーケストレーション。"""
     out.mkdir(parents=True, exist_ok=True)
 
-    existing_md = list(out.glob("*.md"))
-    if existing_md and not overwrite:
+    existing_chunks = list(out.glob(CHUNK_FILE_PATTERN))
+    if existing_chunks and not overwrite:
         raise click.ClickException(
-            f"出力先に既存のmdファイルがあります。--overwrite を指定してください: {out}"
+            f"出力先に既存のチャンクファイルがあります。--overwrite を指定してください: {out}"
         )
     if overwrite:
-        for f in existing_md:
+        for f in existing_chunks:
             f.unlink()
-
-    parser = Pymupdf4llmParser()
 
     try:
         total_pages = parser.get_total_pages(pdf)
@@ -70,16 +56,31 @@ def split(pdf_path: str, output_dir: str, chunk_size: int, overwrite: bool) -> N
             page_start=start_page,
             page_end=end_page,
         )
-        post = frontmatter.Post(
-            content=md_content,
-            source=meta.source,
-            chunk=meta.chunk,
-            page_start=meta.page_start,
-            page_end=meta.page_end,
-        )
+        post = frontmatter.Post(content=md_content, **asdict(meta))
 
         file_path = out / f"{chunk_num:04d}.md"
         file_path.write_text(frontmatter.dumps(post), encoding="utf-8")
+
+
+@click.group()
+def main() -> None:
+    """PDFをページ単位でチャンク分割し、Markdown化・インデックス生成するCLIツール。"""
+
+
+@main.command()
+@click.argument("pdf_path", type=click.Path(exists=True))
+@click.argument("output_dir", type=click.Path())
+@click.option(
+    "--chunk-size",
+    default=10,
+    type=click.IntRange(min=1),
+    help="チャンクあたりのページ数。",
+)
+@click.option("--overwrite", is_flag=True, help="既存ファイルを上書きする。")
+def split(pdf_path: str, output_dir: str, chunk_size: int, overwrite: bool) -> None:
+    """PDFをページ単位でチャンク分割する。"""
+    parser = Pymupdf4llmParser()
+    run_split(Path(pdf_path), Path(output_dir), chunk_size, overwrite, parser)
 
 
 @main.command()

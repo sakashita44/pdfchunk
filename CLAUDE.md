@@ -167,8 +167,8 @@ pdfchunk index <output_dir> [options]
 
 `--overwrite` の挙動（split）:
 
-- `--overwrite` なし: `output_dir` 内に `*.md` が1つでも存在すればエラー
-- `--overwrite` あり: `output_dir` 内の `*.md` を全削除してから再生成（チャンク数が減った場合に古いファイルが残る問題を防ぐ）
+- `--overwrite` なし: `output_dir` 内にチャンクファイル（`NNNN.md`）が1つでも存在すればエラー
+- `--overwrite` あり: `output_dir` 内のチャンクファイル（`NNNN.md`）を全削除してから再生成（`index.md` やユーザーが配置した他の `.md` は保護される）
 
 `index` コマンドの処理フロー:
 
