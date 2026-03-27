@@ -264,26 +264,64 @@ class TestSplitCommand:
         assert "PDF解析に失敗しました" in result.output
 
 
-@pytest.mark.skip(reason="indexコマンド実装待ち (#6)")
 class TestIndexCommand:
     """index コマンドの統合テスト。"""
 
-    def test_index_creates_index_file(self, runner: CliRunner, tmp_path: Path) -> None:
+    def test_index_creates_index_file(
+        self, runner: CliRunner, tmp_chunk_files: list[Path]
+    ) -> None:
         """index.mdが生成されること。"""
-        pytest.fail("未実装")
+        out_dir = tmp_chunk_files[0].parent
+        result = runner.invoke(main, ["index", str(out_dir)])
+        assert result.exit_code == 0, result.output
 
-    def test_index_with_summarize(self, runner: CliRunner, tmp_path: Path) -> None:
-        """--summarize-chunksオプションが動作すること。"""
-        pytest.fail("未実装")
+        index_path = out_dir / "index.md"
+        assert index_path.exists()
+
+        content = index_path.read_text(encoding="utf-8")
+        assert "test.pdf" in content
+        assert "0001.md" in content
+        assert "0002.md" in content
+        assert "0003.md" in content
+
+    def test_index_with_overwrite(
+        self, runner: CliRunner, tmp_chunk_files: list[Path]
+    ) -> None:
+        """--overwriteありで既存index.mdを上書きできること。"""
+        out_dir = tmp_chunk_files[0].parent
+        (out_dir / "index.md").write_text("old index", encoding="utf-8")
+
+        result = runner.invoke(main, ["index", str(out_dir), "--overwrite"])
+        assert result.exit_code == 0, result.output
+
+        content = (out_dir / "index.md").read_text(encoding="utf-8")
+        assert content != "old index"
+        assert "0001.md" in content
 
     def test_index_without_overwrite_fails_on_existing(
-        self, runner: CliRunner, tmp_path: Path
+        self, runner: CliRunner, tmp_chunk_files: list[Path]
     ) -> None:
         """--overwriteなしでindex.mdが既存の場合エラーになること。"""
-        pytest.fail("未実装")
+        out_dir = tmp_chunk_files[0].parent
+        (out_dir / "index.md").write_text("existing", encoding="utf-8")
+
+        result = runner.invoke(main, ["index", str(out_dir)])
+        assert result.exit_code != 0
+        assert "--overwrite" in result.output
 
     def test_index_summarize_without_summarizer_raises(
-        self, runner: CliRunner, tmp_path: Path
+        self, runner: CliRunner, tmp_chunk_files: list[Path]
     ) -> None:
         """Summarizer未設定で--summarize-chunks指定時にエラーメッセージが表示されること。"""
-        pytest.fail("未実装")
+        out_dir = tmp_chunk_files[0].parent
+        result = runner.invoke(main, ["index", str(out_dir), "--summarize-chunks"])
+        assert result.exit_code != 0
+        assert "Summarizer" in result.output
+
+    def test_index_no_chunk_files_raises(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        """チャンクファイルがない場合エラーになること。"""
+        result = runner.invoke(main, ["index", str(tmp_path)])
+        assert result.exit_code != 0
+        assert "チャンクファイルが見つかりません" in result.output
