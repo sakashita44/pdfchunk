@@ -222,6 +222,17 @@ class TestSplitCommand:
         assert result.exit_code != 0
         assert "9999" in result.output
 
+    @patch("pdfchunk.cli.Pymupdf4llmParser", lambda: FakeParser(total_pages=0))
+    def test_split_zero_pages_raises(self, runner: CliRunner, tmp_path: Path) -> None:
+        """0ページのPDFの場合エラーになること。"""
+        dummy_pdf = tmp_path / "empty.pdf"
+        dummy_pdf.touch()
+        out_dir = tmp_path / "output"
+
+        result = runner.invoke(main, ["split", str(dummy_pdf), str(out_dir)])
+        assert result.exit_code != 0
+        assert "ページ数が0" in result.output
+
     @patch(
         "pdfchunk.cli.Pymupdf4llmParser",
         lambda: ErrorParser(fail_on="get_total_pages"),

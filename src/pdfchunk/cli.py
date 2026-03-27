@@ -34,6 +34,9 @@ def run_split(
     except PdfChunkError as e:
         raise click.ClickException(str(e)) from e
 
+    if total_pages <= 0:
+        raise click.ClickException(f"PDFのページ数が0です: {pdf}")
+
     total_chunks = math.ceil(total_pages / chunk_size)
     if total_chunks > MAX_CHUNKS:
         raise click.ClickException(
