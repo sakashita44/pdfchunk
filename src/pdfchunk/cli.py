@@ -1,4 +1,68 @@
+import math
+from dataclasses import asdict
+from pathlib import Path
+
 import click
+import frontmatter
+
+from pdfchunk.exceptions import PdfChunkError
+from pdfchunk.models import ChunkFileFormat
+from pdfchunk.parser import Parser
+from pdfchunk.parsers.pymupdf4llm_parser import Pymupdf4llmParser
+
+MAX_CHUNKS = 9999
+CHUNK_FILE_PATTERN = "[0-9][0-9][0-9][0-9].md"
+
+
+def run_split(
+    pdf: Path, out: Path, chunk_size: int, overwrite: bool, parser: Parser
+) -> None:
+    """split コマンドのオーケストレーション。"""
+    out.mkdir(parents=True, exist_ok=True)
+
+    existing_chunks = list(out.glob(CHUNK_FILE_PATTERN))
+    if existing_chunks and not overwrite:
+        raise click.ClickException(
+            f"出力先に既存のチャンクファイルがあります。--overwrite を指定してください: {out}"
+        )
+    if overwrite:
+        for f in existing_chunks:
+            f.unlink()
+
+    try:
+        total_pages = parser.get_total_pages(pdf)
+    except PdfChunkError as e:
+        raise click.ClickException(str(e)) from e
+
+    if total_pages <= 0:
+        raise click.ClickException(f"PDFのページ数が0です: {pdf}")
+
+    total_chunks = math.ceil(total_pages / chunk_size)
+    if total_chunks > MAX_CHUNKS:
+        raise click.ClickException(
+            f"チャンク数が上限({MAX_CHUNKS})を超えます: {total_chunks}"
+        )
+
+    for i in range(total_chunks):
+        chunk_num = i + 1
+        start_page = i * chunk_size + 1
+        end_page = min(start_page + chunk_size - 1, total_pages)
+
+        try:
+            md_content = parser.parse(pdf, start_page, end_page)
+        except PdfChunkError as e:
+            raise click.ClickException(str(e)) from e
+
+        meta = ChunkFileFormat(
+            source=pdf.name,
+            chunk=chunk_num,
+            page_start=start_page,
+            page_end=end_page,
+        )
+        post = frontmatter.Post(content=md_content, **asdict(meta))
+
+        file_path = out / f"{chunk_num:04d}.md"
+        file_path.write_text(frontmatter.dumps(post), encoding="utf-8")
 
 
 @click.group()
@@ -18,7 +82,8 @@ def main() -> None:
 @click.option("--overwrite", is_flag=True, help="既存ファイルを上書きする。")
 def split(pdf_path: str, output_dir: str, chunk_size: int, overwrite: bool) -> None:
     """PDFをページ単位でチャンク分割する。"""
-    raise click.ClickException("split: 未実装")
+    parser = Pymupdf4llmParser()
+    run_split(Path(pdf_path), Path(output_dir), chunk_size, overwrite, parser)
 
 
 @main.command()
