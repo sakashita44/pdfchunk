@@ -6,6 +6,8 @@ import click
 import frontmatter
 
 from pdfchunk.exceptions import PdfChunkError
+from pdfchunk.index_generator import IndexGenerator
+from pdfchunk.index_generators.default_index_generator import DefaultIndexGenerator
 from pdfchunk.models import ChunkFileFormat
 from pdfchunk.parser import Parser
 from pdfchunk.parsers.pymupdf4llm_parser import Pymupdf4llmParser
@@ -65,6 +67,35 @@ def run_split(
         file_path.write_text(frontmatter.dumps(post), encoding="utf-8")
 
 
+INDEX_FILE = "index.md"
+
+
+def run_index(
+    out: Path,
+    excerpt_lines: int,
+    summarize_chunks: bool,
+    overwrite: bool,
+    generator: IndexGenerator,
+) -> None:
+    """index コマンドのオーケストレーション。"""
+    index_path = out / INDEX_FILE
+    if index_path.exists() and not overwrite:
+        raise click.ClickException(
+            f"既存の {INDEX_FILE} があります。--overwrite を指定してください: {out}"
+        )
+
+    chunk_files = list(out.glob(CHUNK_FILE_PATTERN))
+    if not chunk_files:
+        raise click.ClickException(f"チャンクファイルが見つかりません: {out}")
+
+    try:
+        content = generator.generate(chunk_files, excerpt_lines, summarize_chunks)
+    except PdfChunkError as e:
+        raise click.ClickException(str(e)) from e
+
+    index_path.write_text(content, encoding="utf-8")
+
+
 @click.group()
 def main() -> None:
     """PDFをページ単位でチャンク分割し、Markdown化・インデックス生成するCLIツール。"""
@@ -100,4 +131,5 @@ def index(
     output_dir: str, excerpt_lines: int, summarize_chunks: bool, overwrite: bool
 ) -> None:
     """チャンクファイル群からインデックスを生成する。"""
-    raise click.ClickException("index: 未実装")
+    generator = DefaultIndexGenerator()
+    run_index(Path(output_dir), excerpt_lines, summarize_chunks, overwrite, generator)
