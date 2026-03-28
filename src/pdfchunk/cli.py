@@ -78,6 +78,9 @@ def run_index(
     generator: IndexGenerator,
 ) -> None:
     """index コマンドのオーケストレーション。"""
+    if not out.is_dir():
+        raise click.ClickException(f"出力ディレクトリが存在しません: {out}")
+
     index_path = out / INDEX_FILE
     if index_path.exists() and not overwrite:
         raise click.ClickException(

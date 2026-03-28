@@ -325,3 +325,22 @@ class TestIndexCommand:
         result = runner.invoke(main, ["index", str(tmp_path)])
         assert result.exit_code != 0
         assert "チャンクファイルが見つかりません" in result.output
+
+    def test_index_ignores_non_chunk_md_files(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        """NNNN.md 以外の .md ファイルはインデックス対象外であること。"""
+        (tmp_path / "notes.md").write_text("メモ", encoding="utf-8")
+        (tmp_path / "memo.md").write_text("メモ2", encoding="utf-8")
+
+        result = runner.invoke(main, ["index", str(tmp_path)])
+        assert result.exit_code != 0
+        assert "チャンクファイルが見つかりません" in result.output
+
+    def test_index_nonexistent_dir_raises(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        """存在しないディレクトリを指定した場合エラーになること。"""
+        nonexistent = tmp_path / "no_such_dir"
+        result = runner.invoke(main, ["index", str(nonexistent)])
+        assert result.exit_code != 0
