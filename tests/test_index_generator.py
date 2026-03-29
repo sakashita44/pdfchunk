@@ -4,14 +4,7 @@ import pytest
 
 from pdfchunk.exceptions import PdfChunkError
 from pdfchunk.index_generators import DefaultIndexGenerator
-from pdfchunk.summarizer import Summarizer
-
-
-class DummySummarizer(Summarizer):
-    """テスト用のダミー要約器。"""
-
-    def summarize(self, text: str) -> str:
-        return "ダミー要約"
+from pdfchunk.summarizers import DummySummarizer
 
 
 class TestIndexGenerator:
@@ -132,7 +125,7 @@ class TestIndexGenerator:
             excerpt_lines=5,
             summarize_chunks=True,
         )
-        assert "ダミー要約" in result
+        assert DummySummarizer.FIXED_SUMMARY in result
         assert "summary:" in result
 
     def test_generate_raises_on_invalid_file(self, tmp_path: Path) -> None:
