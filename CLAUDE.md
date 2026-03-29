@@ -172,7 +172,7 @@ pdfchunk index <output_dir> [options]
 
 `index` コマンドの処理フロー:
 
-1. `output_dir` 内の `index.md` 以外の `*.md` を走査
+1. `output_dir` 内のチャンクファイル（`NNNN.md`）を走査
 1. `IndexGenerator.generate()` に渡す
 1. 結果を `index.md` として書き出し
 
