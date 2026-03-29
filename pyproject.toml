@@ -10,11 +10,6 @@ dependencies = [
     "python-frontmatter>=1.1",
 ]
 
-[project.optional-dependencies]
-ai = [
-    "litellm>=1.0",
-]
-
 [dependency-groups]
 dev = [
     "pre-commit>=4.5.1",
