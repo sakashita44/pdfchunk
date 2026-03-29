@@ -1,5 +1,9 @@
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
+import pytest
+
+from pdfchunk.exceptions import PdfChunkError
 from pdfchunk.index_generators import DefaultIndexGenerator
 from pdfchunk.summarizers import DummySummarizer
 
@@ -50,3 +54,43 @@ class TestIndexGeneratorWithSummarizer:
             summarize_chunks=False,
         )
         assert DummySummarizer.FIXED_SUMMARY not in result
+
+
+class TestLitellmSummarizer:
+    """LitellmSummarizer のテスト。"""
+
+    def test_import_error_when_litellm_missing(self) -> None:
+        """litellm 未インストール時に明確なエラーメッセージが出ること。"""
+        with patch.dict("sys.modules", {"litellm": None}):
+            with pytest.raises(ImportError, match="litellm が見つかりません"):
+                from pdfchunk.summarizers.litellm import LitellmSummarizer
+
+                LitellmSummarizer(model="gpt-4o")
+
+    def test_summarize_returns_content(self) -> None:
+        """モックしたLLM応答からテキストが返ること。"""
+        with patch.dict("sys.modules", {"litellm": MagicMock()}):
+            from pdfchunk.summarizers.litellm import LitellmSummarizer
+
+            summarizer = LitellmSummarizer(model="gpt-4o")
+
+            mock_response = MagicMock()
+            mock_response.choices[0].message.content = "要約テキスト"
+            summarizer._litellm.completion.return_value = mock_response
+
+            result = summarizer.summarize("テスト入力")
+            assert result == "要約テキスト"
+
+    def test_summarize_raises_on_none_content(self) -> None:
+        """LLM応答が None の場合に PdfChunkError が送出されること。"""
+        with patch.dict("sys.modules", {"litellm": MagicMock()}):
+            from pdfchunk.summarizers.litellm import LitellmSummarizer
+
+            summarizer = LitellmSummarizer(model="gpt-4o")
+
+            mock_response = MagicMock()
+            mock_response.choices[0].message.content = None
+            summarizer._litellm.completion.return_value = mock_response
+
+            with pytest.raises(PdfChunkError, match="テキストが含まれていません"):
+                summarizer.summarize("テスト入力")

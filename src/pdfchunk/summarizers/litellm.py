@@ -1,3 +1,4 @@
+from pdfchunk.exceptions import PdfChunkError
 from pdfchunk.summarizer import Summarizer
 
 _SYSTEM_PROMPT = (
@@ -23,7 +24,7 @@ class LitellmSummarizer(Summarizer):
             import litellm as _litellm
         except ImportError as e:
             raise ImportError(
-                "litellm が見つかりません。`pip install pdfchunk[ai]` でインストールしてください。"
+                "litellm が見つかりません。`pip install litellm` でインストールしてください。"
             ) from e
         self._litellm = _litellm
         self._model = model
@@ -37,4 +38,7 @@ class LitellmSummarizer(Summarizer):
                 {"role": "user", "content": text},
             ],
         )
-        return response.choices[0].message.content
+        content = response.choices[0].message.content
+        if content is None:
+            raise PdfChunkError("LLMからの応答にテキストが含まれていません")
+        return content
