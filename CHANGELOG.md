@@ -12,3 +12,5 @@
 - `--chunk-size`, `--excerpt-lines`, `--overwrite` オプション
 - Pymupdf4llmParser による PDF→Markdown 変換
 - DefaultIndexGenerator によるインデックス生成
+
+[Unreleased]: https://github.com/sakashita44/pdfchunk/commits/main
