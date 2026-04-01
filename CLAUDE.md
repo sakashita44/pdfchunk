@@ -139,19 +139,21 @@ class Summarizer(ABC):
 ### コマンド体系
 
 ```bash
-# チャンク生成
+# 一括実行（split → index）
+pdfchunk run <pdf_path> <output_dir> [options]
+
+# チャンク生成のみ
 pdfchunk split <pdf_path> <output_dir> [options]
 
-# インデックス生成
+# インデックス生成のみ
 pdfchunk index <output_dir> [options]
 ```
 
 ### オプション
 
-- `--chunk-size` — チャンクあたりのページ数（default: 10）
-- `--excerpt-lines` — indexに含める各チャンクの抜粋行数（default: 5）
-- `--summarize-chunks` — index生成時に各チャンクの要約を付加する（default: off）
-- `--overwrite` — 既存ファイルを上書きする（default: off、既存時はエラー）
+- `--chunk-size` — チャンクあたりのページ数（default: 10）（run, split）
+- `--excerpt-lines` — indexに含める各チャンクの抜粋行数（default: 5）（run, index）
+- `--overwrite` — 既存ファイルを上書きする（default: off、既存時はエラー）（run, split, index）
 
 ### オーケストレーション
 
@@ -180,6 +182,13 @@ pdfchunk index <output_dir> [options]
 
 - `--overwrite` なし: `index.md` が既に存在すればエラー
 - `--overwrite` あり: `index.md` を上書き
+
+`run` コマンドの処理フロー:
+
+1. `split` の処理フローを実行
+1. `index` の処理フローを実行
+
+`--overwrite` の挙動は `split` と `index` それぞれと同一
 
 ## 制約
 

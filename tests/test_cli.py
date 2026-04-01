@@ -334,3 +334,104 @@ class TestIndexCommand:
         nonexistent = tmp_path / "no_such_dir"
         result = runner.invoke(main, ["index", str(nonexistent)])
         assert result.exit_code != 0
+
+
+class TestRunCommand:
+    """run コマンドの統合テスト。"""
+
+    @patch("pdfchunk.cli.Pymupdf4llmParser", lambda: FakeParser(total_pages=25))
+    def test_run_creates_chunks_and_index(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        """チャンクファイルと index.md が一括生成されること。"""
+        dummy_pdf = tmp_path / "input" / "test.pdf"
+        dummy_pdf.parent.mkdir()
+        dummy_pdf.touch()
+        out_dir = tmp_path / "output"
+
+        result = runner.invoke(
+            main, ["run", str(dummy_pdf), str(out_dir), "--chunk-size", "10"]
+        )
+        assert result.exit_code == 0, result.output
+
+        chunk_files = sorted(out_dir.glob("[0-9][0-9][0-9][0-9].md"))
+        assert len(chunk_files) == 3
+        assert [f.name for f in chunk_files] == ["0001.md", "0002.md", "0003.md"]
+
+        index_path = out_dir / "index.md"
+        assert index_path.exists()
+        content = index_path.read_text(encoding="utf-8")
+        assert "test.pdf" in content
+        assert "0001.md" in content
+
+    def test_run_help(self, runner: CliRunner) -> None:
+        """run コマンドのヘルプが正常に表示されること。"""
+        result = runner.invoke(main, ["run", "--help"])
+        assert result.exit_code == 0
+        assert "--chunk-size" in result.output
+        assert "--excerpt-lines" in result.output
+        assert "--overwrite" in result.output
+
+    @patch("pdfchunk.cli.Pymupdf4llmParser", lambda: FakeParser(total_pages=25))
+    def test_run_with_overwrite(self, runner: CliRunner, tmp_path: Path) -> None:
+        """--overwrite ありで既存ファイルを上書きして一括生成できること。"""
+        dummy_pdf = tmp_path / "test.pdf"
+        dummy_pdf.touch()
+        out_dir = tmp_path / "output"
+        out_dir.mkdir()
+        (out_dir / "0001.md").write_text("old chunk", encoding="utf-8")
+        (out_dir / "index.md").write_text("old index", encoding="utf-8")
+
+        result = runner.invoke(
+            main, ["run", str(dummy_pdf), str(out_dir), "--overwrite"]
+        )
+        assert result.exit_code == 0, result.output
+
+        chunk_files = sorted(out_dir.glob("[0-9][0-9][0-9][0-9].md"))
+        assert len(chunk_files) == 3
+        assert (out_dir / "index.md").exists()
+
+    @patch("pdfchunk.cli.Pymupdf4llmParser", lambda: FakeParser(total_pages=25))
+    def test_run_without_overwrite_fails_on_existing_chunks(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        """--overwrite なしで既存チャンクがある場合エラーになること。"""
+        dummy_pdf = tmp_path / "test.pdf"
+        dummy_pdf.touch()
+        out_dir = tmp_path / "output"
+        out_dir.mkdir()
+        (out_dir / "0001.md").write_text("existing", encoding="utf-8")
+
+        result = runner.invoke(main, ["run", str(dummy_pdf), str(out_dir)])
+        assert result.exit_code != 0
+        assert "--overwrite" in result.output
+
+    @patch("pdfchunk.cli.Pymupdf4llmParser", lambda: FakeParser(total_pages=25))
+    def test_run_excerpt_lines_option(self, runner: CliRunner, tmp_path: Path) -> None:
+        """--excerpt-lines オプションが反映されること。"""
+        dummy_pdf = tmp_path / "test.pdf"
+        dummy_pdf.touch()
+        out_dir = tmp_path / "output"
+
+        result = runner.invoke(
+            main,
+            ["run", str(dummy_pdf), str(out_dir), "--excerpt-lines", "2"],
+        )
+        assert result.exit_code == 0, result.output
+        assert (out_dir / "index.md").exists()
+
+    @patch(
+        "pdfchunk.cli.Pymupdf4llmParser",
+        lambda: ErrorParser(fail_on="get_total_pages"),
+    )
+    def test_run_split_error_propagates(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        """split フェーズのエラーが伝搬されること。"""
+        dummy_pdf = tmp_path / "bad.pdf"
+        dummy_pdf.touch()
+        out_dir = tmp_path / "output"
+
+        result = runner.invoke(main, ["run", str(dummy_pdf), str(out_dir)])
+        assert result.exit_code != 0
+        assert "PDFを開けません" in result.output

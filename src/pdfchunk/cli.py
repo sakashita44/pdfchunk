@@ -133,3 +133,34 @@ def index(output_dir: str, excerpt_lines: int, overwrite: bool) -> None:
     """チャンクファイル群からインデックスを生成する。"""
     generator = DefaultIndexGenerator()
     run_index(Path(output_dir), excerpt_lines, False, overwrite, generator)
+
+
+@main.command()
+@click.argument("pdf_path", type=click.Path(exists=True))
+@click.argument("output_dir", type=click.Path())
+@click.option(
+    "--chunk-size",
+    default=10,
+    type=click.IntRange(min=1),
+    help="チャンクあたりのページ数。",
+)
+@click.option(
+    "--excerpt-lines",
+    default=5,
+    type=click.IntRange(min=0),
+    help="各チャンクから抽出する抜粋行数。",
+)
+@click.option("--overwrite", is_flag=True, help="既存ファイルを上書きする。")
+def run(
+    pdf_path: str,
+    output_dir: str,
+    chunk_size: int,
+    excerpt_lines: int,
+    overwrite: bool,
+) -> None:
+    """PDFのチャンク分割からインデックス生成までを一括実行する。"""
+    parser = Pymupdf4llmParser()
+    out = Path(output_dir)
+    run_split(Path(pdf_path), out, chunk_size, overwrite, parser)
+    generator = DefaultIndexGenerator()
+    run_index(out, excerpt_lines, False, overwrite, generator)
