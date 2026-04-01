@@ -407,6 +407,23 @@ class TestRunCommand:
         assert "--overwrite" in result.output
 
     @patch("pdfchunk.cli.Pymupdf4llmParser", lambda: FakeParser(total_pages=25))
+    def test_run_without_overwrite_fails_on_existing_index(
+        self, runner: CliRunner, tmp_path: Path
+    ) -> None:
+        """--overwrite なしで既存 index.md がある場合、チャンク生成前にエラーになること。"""
+        dummy_pdf = tmp_path / "test.pdf"
+        dummy_pdf.touch()
+        out_dir = tmp_path / "output"
+        out_dir.mkdir()
+        (out_dir / "index.md").write_text("existing index", encoding="utf-8")
+
+        result = runner.invoke(main, ["run", str(dummy_pdf), str(out_dir)])
+        assert result.exit_code != 0
+        assert "--overwrite" in result.output
+        # チャンクファイルが生成されていないことを確認（事前バリデーションの効果）
+        assert list(out_dir.glob("[0-9][0-9][0-9][0-9].md")) == []
+
+    @patch("pdfchunk.cli.Pymupdf4llmParser", lambda: FakeParser(total_pages=25))
     def test_run_excerpt_lines_option(self, runner: CliRunner, tmp_path: Path) -> None:
         """--excerpt-lines オプションが反映されること。"""
         dummy_pdf = tmp_path / "test.pdf"

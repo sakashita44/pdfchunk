@@ -159,8 +159,22 @@ def run(
     overwrite: bool,
 ) -> None:
     """PDFのチャンク分割からインデックス生成までを一括実行する。"""
-    parser = Pymupdf4llmParser()
     out = Path(output_dir)
+
+    # split + index 両方の事前条件を一括チェック（部分的な成果物の残存を防止）
+    if not overwrite:
+        existing_chunks = list(out.glob(CHUNK_FILE_PATTERN)) if out.exists() else []
+        if existing_chunks:
+            raise click.ClickException(
+                f"出力先に既存のチャンクファイルがあります。--overwrite を指定してください: {out}"
+            )
+        index_path = out / INDEX_FILE
+        if index_path.exists():
+            raise click.ClickException(
+                f"既存の {INDEX_FILE} があります。--overwrite を指定してください: {out}"
+            )
+
+    parser = Pymupdf4llmParser()
     run_split(Path(pdf_path), out, chunk_size, overwrite, parser)
     generator = DefaultIndexGenerator()
     run_index(out, excerpt_lines, False, overwrite, generator)
