@@ -15,19 +15,41 @@ Python 3.13 以上が必要。
 
 ## 使い方
 
-### チャンク生成（split）
+### 一括実行（run）
 
-PDFを固定ページ数ごとに分割し、Markdownファイルとして出力する。
+PDFのチャンク分割からインデックス生成までを一括実行する。
+
+```bash
+pdfchunk run <pdf_path> <output_dir>
+```
+
+```bash
+# 例: 5ページごとに分割して一括処理
+pdfchunk run report.pdf output/ --chunk-size 5
+
+# 抜粋行数を変更
+pdfchunk run report.pdf output/ --excerpt-lines 10
+
+# 既存ファイルを上書き
+pdfchunk run report.pdf output/ --overwrite
+```
+
+| オプション        | デフォルト | 説明                           |
+| ----------------- | ---------- | ------------------------------ |
+| `--chunk-size`    | 10         | チャンクあたりのページ数       |
+| `--excerpt-lines` | 5          | 各チャンクから抽出する抜粋行数 |
+| `--overwrite`     | off        | 既存ファイルを削除して再生成   |
+
+### チャンク生成のみ（split）
+
+チャンク分割だけを個別に実行する。
 
 ```bash
 pdfchunk split <pdf_path> <output_dir>
 ```
 
 ```bash
-# 例: 5ページごとに分割
 pdfchunk split report.pdf output/ --chunk-size 5
-
-# 既存のチャンクファイルを上書き
 pdfchunk split report.pdf output/ --overwrite
 ```
 
@@ -36,19 +58,16 @@ pdfchunk split report.pdf output/ --overwrite
 | `--chunk-size` | 10         | チャンクあたりのページ数             |
 | `--overwrite`  | off        | 既存チャンクファイルを削除して再生成 |
 
-### インデックス生成（index）
+### インデックス生成のみ（index）
 
-チャンクファイル群から `index.md` を生成する。各チャンクのメタ情報と冒頭の抜粋を一覧化する。
+`split` が生成したチャンクファイル群から `index.md` を生成する。
 
 ```bash
 pdfchunk index <output_dir>
 ```
 
 ```bash
-# 抜粋行数を変更
 pdfchunk index output/ --excerpt-lines 10
-
-# 既存の index.md を上書き
 pdfchunk index output/ --overwrite
 ```
 

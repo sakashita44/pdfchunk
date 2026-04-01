@@ -133,3 +133,48 @@ def index(output_dir: str, excerpt_lines: int, overwrite: bool) -> None:
     """チャンクファイル群からインデックスを生成する。"""
     generator = DefaultIndexGenerator()
     run_index(Path(output_dir), excerpt_lines, False, overwrite, generator)
+
+
+@main.command()
+@click.argument("pdf_path", type=click.Path(exists=True))
+@click.argument("output_dir", type=click.Path())
+@click.option(
+    "--chunk-size",
+    default=10,
+    type=click.IntRange(min=1),
+    help="チャンクあたりのページ数。",
+)
+@click.option(
+    "--excerpt-lines",
+    default=5,
+    type=click.IntRange(min=0),
+    help="各チャンクから抽出する抜粋行数。",
+)
+@click.option("--overwrite", is_flag=True, help="既存ファイルを上書きする。")
+def run(
+    pdf_path: str,
+    output_dir: str,
+    chunk_size: int,
+    excerpt_lines: int,
+    overwrite: bool,
+) -> None:
+    """PDFのチャンク分割からインデックス生成までを一括実行する。"""
+    out = Path(output_dir)
+
+    # split + index 両方の事前条件を一括チェック（部分的な成果物の残存を防止）
+    if not overwrite:
+        existing_chunks = list(out.glob(CHUNK_FILE_PATTERN)) if out.exists() else []
+        if existing_chunks:
+            raise click.ClickException(
+                f"出力先に既存のチャンクファイルがあります。--overwrite を指定してください: {out}"
+            )
+        index_path = out / INDEX_FILE
+        if index_path.exists():
+            raise click.ClickException(
+                f"既存の {INDEX_FILE} があります。--overwrite を指定してください: {out}"
+            )
+
+    parser = Pymupdf4llmParser()
+    run_split(Path(pdf_path), out, chunk_size, overwrite, parser)
+    generator = DefaultIndexGenerator()
+    run_index(out, excerpt_lines, False, overwrite, generator)
