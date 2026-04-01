@@ -64,7 +64,6 @@ class TestCLIHelp:
         result = runner.invoke(main, ["index", "--help"])
         assert result.exit_code == 0
         assert "--excerpt-lines" in result.output
-        assert "--summarize-chunks" in result.output
         assert "--overwrite" in result.output
 
 
@@ -308,15 +307,6 @@ class TestIndexCommand:
         result = runner.invoke(main, ["index", str(out_dir)])
         assert result.exit_code != 0
         assert "--overwrite" in result.output
-
-    def test_index_summarize_without_summarizer_raises(
-        self, runner: CliRunner, tmp_chunk_files: list[Path]
-    ) -> None:
-        """Summarizer未設定で--summarize-chunks指定時にエラーメッセージが表示されること。"""
-        out_dir = tmp_chunk_files[0].parent
-        result = runner.invoke(main, ["index", str(out_dir), "--summarize-chunks"])
-        assert result.exit_code != 0
-        assert "Summarizer" in result.output
 
     def test_index_no_chunk_files_raises(
         self, runner: CliRunner, tmp_path: Path

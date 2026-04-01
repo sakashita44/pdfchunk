@@ -194,8 +194,8 @@ pdfchunk index <output_dir> [options]
 
 - `pymupdf4llm` — PDF→Markdown変換（Parser実装）
 - `python-frontmatter` — YAML frontmatter読み書き
-- `click` or `typer` — CLI フレームワーク
-- `litellm` — Summarizer実装（summarize-chunks使用時のみ、optional dependency: `pip install pdfchunk[ai]`）
+- `click` — CLI フレームワーク
+- `litellm` — Summarizer実装（summarize-chunks使用時のみ、`pip install litellm` で手動インストール）
 
 ## テスト方針
 

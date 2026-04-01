@@ -128,11 +128,8 @@ def split(pdf_path: str, output_dir: str, chunk_size: int, overwrite: bool) -> N
     type=click.IntRange(min=0),
     help="各チャンクから抽出する抜粋行数。",
 )
-@click.option("--summarize-chunks", is_flag=True, help="各チャンクの要約を付加する。")
 @click.option("--overwrite", is_flag=True, help="既存ファイルを上書きする。")
-def index(
-    output_dir: str, excerpt_lines: int, summarize_chunks: bool, overwrite: bool
-) -> None:
+def index(output_dir: str, excerpt_lines: int, overwrite: bool) -> None:
     """チャンクファイル群からインデックスを生成する。"""
     generator = DefaultIndexGenerator()
-    run_index(Path(output_dir), excerpt_lines, summarize_chunks, overwrite, generator)
+    run_index(Path(output_dir), excerpt_lines, False, overwrite, generator)
