@@ -13,6 +13,14 @@ pip install .
 
 Python 3.13 以上が必要。
 
+### インストールせずに実行する
+
+`pip install` を行わずリポジトリルートから直接実行することもできる。
+
+```bash
+PYTHONPATH=src python -m pdfchunk run report.pdf output/
+```
+
 ## 使い方
 
 ### 一括実行（run）
